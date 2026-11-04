@@ -9,45 +9,46 @@
 
 ## 1. Visão Geral da Arquitetura
 
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ CLIENTES (Nós) │
-│ │
-│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│ │ Desktop │ │ Mobile │ │ PWA │ │ NAS │ │
-│ │ (Tauri 2) │ │ (Tauri 2) │ │ (Browser) │ │ (Docker) │ │
-│ │ Win/Mac/ │ │ iOS/ │ │ (WASM) │ │ (Headless) │ │
-│ │ Linux │ │ Android │ │ │ │ │ │
-│ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ │
-│ │ │ │ │ │
-│ └─────────────────┴─────────────────┴─────────────────┘ │
-│ │ │
-│ ┌──────────────┴──────────────┐ │
-│ │ MOTOR (Rust) — 1 código │ │
-│ │ │ │
-│ │ • Data model + validation │ │
-│ │ • CRDT (Yrs) │ │
-│ │ • E2E Encryption │ │
-│ │ • RBAC Filtering │ │
-│ │ • GEDCOM / FHIR │ │
-│ │ • Layout Engine │ │
-│ │ • Validation (Problem │ │
-│ │ Spotter) │ │
-│ │ • SQLite (persistence) │ │
-│ └──────────────┬──────────────┘ │
-│ │ │
-└───────────────────────────────────┼────────────────────────────────────┘
-│
-WebRTC P2P (E2E)
-+ Relay fallback
-│
-┌───────────────┴───────────────┐
-│ RELAY (Dumb Pipe) │
-│ • Não descifra │
-│ • Não guarda │
-│ • Não vê conteúdo │
-│ • Só retransmite ciphertext │
-└───────────────────────────────┘
-
+│ CLIENTES (Nós)                                                           │
+│                                                                           │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │
+│ │ Desktop     │ │ Mobile      │ │ PWA         │ │ NAS         │         │
+│ │ (Tauri 2)   │ │ (Tauri 2)   │ │ (Browser)   │ │ (Docker)    │         │
+│ │ Win/Mac/    │ │ iOS/        │ │ (WASM)      │ │ (Headless)  │         │
+│ │ Linux       │ │ Android     │ │             │ │             │         │
+│ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘         │
+│        │               │               │               │                 │
+│        └───────────────┴───────────────┴───────────────┘                 │
+│                                │                                          │
+│                ┌───────────────┴──────────────┐                         │
+│                │ MOTOR (Rust) — 1 código      │                         │
+│                │                              │                         │
+│                │ • Data model + validation    │                         │
+│                │ • CRDT (Yrs)                  │                         │
+│                │ • E2E Encryption              │                         │
+│                │ • RBAC Filtering              │                         │
+│                │ • GEDCOM / FHIR               │                         │
+│                │ • Layout Engine               │                         │
+│                │ • Validation (Problem         │                         │
+│                │   Spotter)                    │                         │
+│                │ • SQLite (persistence)        │                         │
+│                └───────────────┬──────────────┘                         │
+│                                │                                          │
+└────────────────────────────────┼─────────────────────────────────────────┘
+                                 │
+                       WebRTC P2P (E2E)
+                       + Relay fallback
+                                 │
+                 ┌───────────────┴───────────────┐
+                 │ RELAY (Dumb Pipe)             │
+                 │ • Não descifra                │
+                 │ • Não guarda                  │
+                 │ • Não vê conteúdo             │
+                 │ • Só retransmite ciphertext  │
+                 └───────────────────────────────┘
+```
 
 ### Princípios Arquiteturais
 
@@ -148,6 +149,7 @@ WebRTC P2P (E2E)
 
 ## 3. Estrutura de Módulos (Repo)
 
+```text
 genogram/
 ├── _docs/ # ← Os 8 ficheiros .md
 │ ├── 00-vision.md
@@ -245,7 +247,7 @@ genogram/
 │ │ ├── test_validation.rs
 │ │ └── integration/
 │ └── benches/
-│ └── layout_bench.rs
+│     └── layout_bench.rs
 │
 ├── frontend/ # ← FRONTEND (Svelte)
 │ ├── package.json
@@ -277,9 +279,9 @@ genogram/
 │ │ │ │ │ ├── AIChat.svelte
 │ │ │ │ │ └── AIInsights.svelte
 │ │ │ │ └── common/
-│ │ │ │ ├── Modal.svelte
-│ │ │ │ ├── Toast.svelte
-│ │ │ │ └── ContextMenu.svelte
+│ │ │ │     ├── Modal.svelte
+│ │ │ │     ├── Toast.svelte
+│ │ │ │     └── ContextMenu.svelte
 │ │ │ ├── stores/
 │ │ │ │ ├── genogram.ts # Zustand store (genogram state)
 │ │ │ │ ├── crdt.ts # Yjs doc reference
@@ -295,7 +297,7 @@ genogram/
 │ │ │ │ ├── en.json
 │ │ │ │ └── ...
 │ │ │ └── types/
-│ │ │ └── index.ts # TS types (gerados do schema)
+│ │ │     └── index.ts # TS types (gerados do schema)
 │ │ └── app.html
 │ ├── public/
 │ │ ├── manifest.json # PWA manifest
@@ -317,7 +319,7 @@ genogram/
 │ ├── docker-compose.yml
 │ ├── entrypoint.sh
 │ └── config/
-│ └── default.toml
+│     └── default.toml
 │
 ├── relay/ # ← Relay (dumb pipe)
 │ ├── Cargo.toml
@@ -331,25 +333,25 @@ genogram/
 │ ├── person.schema.json
 │ ├── relationship.schema.json
 │ └── notation/
-│ ├── relationships.json # 71+ tipos
-│ ├── person_shapes.json # 40+ shapes
-│ └── medical.json # 22 categorias
+│     ├── relationships.json # 71+ tipos
+│     ├── person_shapes.json # 40+ shapes
+│     └── medical.json # 22 categorias
 │
 ├── .github/
 │ └── workflows/
-│ ├── ci.yml # Testes + lint
-│ ├── build-desktop.yml # Win/Mac/Linux
-│ ├── build-mobile.yml # iOS/Android
-│ ├── build-wasm.yml # WASM
-│ ├── build-nas.yml # Docker image
-│ └── release.yml # Tags → releases
+│     ├── ci.yml # Testes + lint
+│     ├── build-desktop.yml # Win/Mac/Linux
+│     ├── build-mobile.yml # iOS/Android
+│     ├── build-wasm.yml # WASM
+│     ├── build-nas.yml # Docker image
+│     └── release.yml # Tags → releases
 │
 ├── Cargo.toml # Workspace (engine + relay)
 ├── rust-toolchain.toml
 ├── .rustfmt.toml
 ├── .clippy.toml
 └── README.md
-
+```
 
 ---
 
@@ -357,87 +359,90 @@ genogram/
 
 ### 4.1. Desktop (Tauri)
 
+```text
 ┌──────────────────────────────────────────────────┐
-│ Svelte (WebView) │
-│ ┌────────────────────────────────────────────┐ │
-│ │ UI Components (Canvas, Panels, Toolbar) │ │
-│ └──────────────────┬─────────────────────────┘ │
-│ │ │
-│ ┌──────────────────┴─────────────────────────┐ │
-│ │ Stores (Zustand) + Services │ │
-│ └──────────────────┬─────────────────────────┘ │
-│ │ │
-│ ┌──────────────────┴─────────────────────────┐ │
-│ │ Tauri Commands (invoke) │ │
-│ │ • create_genogram(data) │ │
-│ │ • add_person(genogram_id, person) │ │
-│ │ • sync_delta(genogram_id, delta) │ │
-│ │ • export_pdf(genogram_id, options) │ │
-│ │ • import_gedcom(path) │ │
-│ │ • get_validation(genogram_id) │ │
-│ └──────────────────┬─────────────────────────┘ │
-└─────────────────────┼────────────────────────────┘
-│ (IPC — Tauri bridge)
-┌─────────────────────┴────────────────────────────┐
-│ Rust (Tauri process) │
-│ ┌────────────────────────────────────────────┐ │
-│ │ Engine (lib) │ │
-│ │ • Models + Validation │ │
-│ │ • CRDT (Yrs) │ │
-│ │ • Crypto (ring) │ │
-│ │ • RBAC Filter │ │
-│ │ • Storage (SQLite) │ │
-│ │ • Import/Export │ │
-│ │ • Layout │ │
-│ └────────────────────────────────────────────┘ │
+│ Svelte (WebView)                                  │
+│ ┌────────────────────────────────────────────┐   │
+│ │ UI Components (Canvas, Panels, Toolbar)     │   │
+│ └──────────────────┬─────────────────────────┘   │
+│                    │                              │
+│ ┌──────────────────┴─────────────────────────┐   │
+│ │ Stores (Zustand) + Services                │   │
+│ └──────────────────┬─────────────────────────┘   │
+│                    │                              │
+│ ┌──────────────────┴─────────────────────────┐   │
+│ │ Tauri Commands (invoke)                     │   │
+│ │ • create_genogram(data)                     │   │
+│ │ • add_person(genogram_id, person)           │   │
+│ │ • sync_delta(genogram_id, delta)            │   │
+│ │ • export_pdf(genogram_id, options)           │   │
+│ │ • import_gedcom(path)                       │   │
+│ │ • get_validation(genogram_id)               │   │
+│ └──────────────────┬─────────────────────────┘   │
+└────────────────────┼─────────────────────────────┘
+                     │ (IPC — Tauri bridge)
+┌────────────────────┴─────────────────────────────┐
+│ Rust (Tauri process)                              │
+│ ┌────────────────────────────────────────────┐   │
+│ │ Engine (lib)                                │   │
+│ │ • Models + Validation                      │   │
+│ │ • CRDT (Yrs)                                │   │
+│ │ • Crypto (ring)                             │   │
+│ │ • RBAC Filter                               │   │
+│ │ • Storage (SQLite)                          │   │
+│ │ • Import/Export                             │   │
+│ │ • Layout                                    │   │
+│ └────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────┘
-
+```
 
 ### 4.2. PWA (Browser)
 
+```text
 ┌──────────────────────────────────────────────────┐
-│ Browser (WebView) │
-│ ┌────────────────────────────────────────────┐ │
-│ │ Svelte (mesmo código do desktop) │ │
-│ └──────────────────┬─────────────────────────┘ │
-│ │ │
-│ ┌──────────────────┴─────────────────────────┐ │
-│ │ Services │ │
-│ │ • engine.ts → WASM (motor Rust) │ │
-│ │ • crypto.ts → WebCrypto (E2E) │ │
-│ │ • sync.ts → WebRTC (nativo no browser) │ │
-│ │ • storage → IndexedDB │ │
-│ └──────────────────┬─────────────────────────┘ │
-│ │ │
-│ ┌──────────────────┴─────────────────────────┐ │
-│ │ WASM Module (motor Rust compilado) │ │
-│ │ • Models + Validation │ │
-│ │ • CRDT (Yrs → WASM) │ │
-│ │ • Layout │ │
-│ │ • GEDCOM parser/writer │ │
-│ │ • Validation (Problem Spotter) │ │
-│ └────────────────────────────────────────────┘ │
+│ Browser (WebView)                                │
+│ ┌────────────────────────────────────────────┐   │
+│ │ Svelte (mesmo código do desktop)           │   │
+│ └──────────────────┬─────────────────────────┘   │
+│                    │                              │
+│ ┌──────────────────┴─────────────────────────┐   │
+│ │ Services                                    │   │
+│ │ • engine.ts → WASM (motor Rust)             │   │
+│ │ • crypto.ts → WebCrypto (E2E)               │   │
+│ │ • sync.ts → WebRTC (nativo no browser)      │   │
+│ │ • storage → IndexedDB                       │   │
+│ └──────────────────┬─────────────────────────┘   │
+│                    │                              │
+│ ┌──────────────────┴─────────────────────────┐   │
+│ │ WASM Module (motor Rust compilado)          │   │
+│ │ • Models + Validation                      │   │
+│ │ • CRDT (Yrs → WASM)                         │   │
+│ │ • Layout                                    │   │
+│ │ • GEDCOM parser/writer                      │   │
+│ │ • Validation (Problem Spotter)              │   │
+│ └────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────┘
-
+```
 
 ### 4.3. NAS (Docker)
 
+```text
 ┌──────────────────────────────────────────────────┐
-│ Docker Container │
-│ ┌────────────────────────────────────────────┐ │
-│ │ Rust Binary (headless) │ │
-│ │ • Engine (lib) │ │
-│ │ • WebRTC server (escuta :8443) │ │
-│ │ • HTTP API (Axum, :8080) — LAN only │ │
-│ │ • SQLite (volume /data) │ │
-│ │ • Audit log (SQLite) │ │
-│ └────────────────────────────────────────────┘ │
+│ Docker Container                                 │
+│ ┌────────────────────────────────────────────┐   │
+│ │ Rust Binary (headless)                      │   │
+│ │ • Engine (lib)                              │   │
+│ │ • WebRTC server (escuta :8443)              │   │
+│ │ • HTTP API (Axum, :8080) — LAN only         │   │
+│ │ • SQLite (volume /data)                     │   │
+│ │ • Audit log (SQLite)                        │   │
+│ └────────────────────────────────────────────┘   │
 │ │
-│ Ports: │
-│ • 8443/TCP → WebRTC/DTLS (E2E) │
-│ • 8080/TCP → HTTP (UI web, LAN only) │
+│ Ports:                                           │
+│ • 8443/TCP → WebRTC/DTLS (E2E)                 │
+│ • 8080/TCP → HTTP (UI web, LAN only)            │
 └──────────────────────────────────────────────────┘
-
+```
 
 ---
 
@@ -445,44 +450,44 @@ genogram/
 
 ### 5.1. Edição Local
 
-Utilizador edita no canvas (Svelte).
-Svelte → Tauri command: update_person(genogram_id, person_id, changes).
-Rust: aplica mudança ao Yrs Doc (CRDT).
-Rust: valida (Problem Spotter).
-Rust: persiste em SQLite.
-Rust: gera delta (Yrs update).
-Se online → envia delta via WebRTC para peers.
-Se offline → guarda delta em fila (SQLite: pending_deltas).
-Svelte: UI atualiza (reactivity via Yjs binding).
+1. Utilizador edita no canvas (Svelte).
+2. Svelte → Tauri command: update_person(genogram_id, person_id, changes).
+3. Rust: aplica mudança ao Yrs Doc (CRDT).
+4. Rust: valida (Problem Spotter).
+5. Rust: persiste em SQLite.
+6. Rust: gera delta (Yrs update).
+7. Se online → envia delta via WebRTC para peers.
+8. Se offline → guarda delta em fila (SQLite: pending_deltas).
+9. Svelte: UI atualiza (reactivity via Yjs binding).
 
 ### 5.2. Sincronização P2P
 
-Device A (online) envia delta via WebRTC DataChannel.
-Device B recebe delta.
-Device B: aplica delta ao Yrs Doc local.
-Device B: valida + persiste em SQLite.
-Device B: UI atualiza.
-Se RBAC aplica (B é collaborator):
-→ O delta já foi filtrado no Device A (owner) antes do envio.
-→ Device B nunca recebe dados que não tem permissão.
+1. Device A (online) envia delta via WebRTC DataChannel.
+2. Device B recebe delta.
+3. Device B: aplica delta ao Yrs Doc local.
+4. Device B: valida + persiste em SQLite.
+5. Device B: UI atualiza.
+6. Se RBAC aplica (B é collaborator):
+   - → O delta já foi filtrado no Device A (owner) antes do envio.
+   - → Device B nunca recebe dados que não tem permissão.
 
 ### 5.3. Sincronização via NAS
 
-iPhone (offline) abre app → sincroniza com NAS (WebRTC).
-NAS aplica delta ao Yrs Doc.
-NAS persiste em SQLite (volume).
-Mac (online) sincroniza com NAS → recebe deltas pendentes.
-NAS aplica + persiste.
-Todos os dispositivos convergem (CRDT guarantee).
+1. iPhone (offline) abre app → sincroniza com NAS (WebRTC).
+2. NAS aplica delta ao Yrs Doc.
+3. NAS persiste em SQLite (volume).
+4. Mac (online) sincroniza com NAS → recebe deltas pendentes.
+5. NAS aplica + persiste.
+6. Todos os dispositivos convergem (CRDT guarantee).
 
 ### 5.4. Relay Fallback (NAT traversal)
 
-Device A e B tentam WebRTC directo (STUN).
-Se falhar (double NAT) → usam relay.
-Relay: recebe ciphertext de A → retransmite ciphertext para B.
-Relay NÃO descifra, NÃO guarda, NÃO vê.
-A e B fazem handshake E2E (chave efémera).
-A partir daqui, o tráfego é E2E (relay é "dumb pipe").
+1. Device A e B tentam WebRTC directo (STUN).
+2. Se falhar (double NAT) → usam relay.
+3. Relay: recebe ciphertext de A → retransmite ciphertext para B.
+4. Relay NÃO descifra, NÃO guarda, NÃO vê.
+5. A e B fazem handshake E2E (chave efémera).
+6. A partir daqui, o tráfego é E2E (relay é "dumb pipe").
 
 ---
 
@@ -514,11 +519,11 @@ A partir daqui, o tráfego é E2E (relay é "dumb pipe").
 
 O utilizador pode definir uma passphrase (PIN) para:
 
-Desbloquear a Master Key no arranque.
-Sem passphrase: a Master Key fica em claro no storage local
-(protecção: só o owner do dispositivo tem acesso físico).
-Com passphrase: a Master Key é encriptada com Argon2id(passphrase).
-→ Se o dispositivo for roubado, sem passphrase = sem acesso.
+- Desbloquear a Master Key no arranque.
+- Sem passphrase: a Master Key fica em claro no storage local
+  (protecção: só o owner do dispositivo tem acesso físico).
+- Com passphrase: a Master Key é encriptada com Argon2id(passphrase).
+- → Se o dispositivo for roubado, sem passphrase = sem acesso.
 
 ---
 
