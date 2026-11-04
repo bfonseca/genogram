@@ -1,29 +1,28 @@
 # Genogram — Data Schema (v1.0)
 
 > **Este é o documento mais importante do projeto.**
-> Todo o código (Rust, JS, AI prompts, GEDCOM mapping, FHIR mapping)
-> deriva deste schema. Se um campo não está aqui, NÃO existe.
-> Se a IA vai "inventar" um campo, este documento é a referência.
+> Todo o código (Rust, JS, prompts de IA e mapeamentos GEDCOM/FHIR) deriva deste schema.
+> Se um campo não está aqui, NÃO existe. Se a IA tentar inventar um campo, este documento é a referência.
 
 ---
 
-## 1. Convenções Gerais
+## 1. Convenções gerais
 
 | Regra | Detalhe |
 |---|---|
-| IDs | UUID v7 (temporais, ordenáveis). Nunca auto-increment. |
-| Datas | ISO 8601 (`YYYY-MM-DD`). `null` = desconhecido. Nunca `0000-00-00`. |
-| Timestamps | Unix epoch (segundos, `i64`). |
-| Strings | `String` em Rust, `string` em JSON. Máx 500 chars (a menos que indicado). |
-| Enums | `snake_case` em Rust e JSON. Nunca inteiros. |
-| Opcionais | `Option<T>` em Rust, `nullable` em JSON Schema. `null` ≠ vazio. |
-| Arrays | `Vec<T>` em Rust, `array` em JSON. `[]` = vazio (diferente de `null`). |
-| Versioning | Cada entidade tem `schema_version: u32`. Migrações em `src/migrations/`. |
-| Serde | Todas as structs: `#[derive(Serialize, Deserialize, Clone, Debug)]` |
+| IDs | UUID v7 (temporais e ordenáveis). Nunca usar auto-incremento. |
+| Datas | ISO 8601 (`YYYY-MM-DD`). `null` significa desconhecido. Nunca usar `0000-00-00`. |
+| Timestamps | Unix epoch em segundos (`i64`). |
+| Strings | `String` em Rust e `string` em JSON. Máximo de 500 caracteres, salvo indicação em contrário. |
+| Enums | `snake_case` em Rust e JSON. Nunca representar enums como inteiros. |
+| Opcionais | `Option<T>` em Rust; nullable em JSON Schema. `null` não é igual a vazio. |
+| Arrays | `Vec<T>` em Rust e `array` em JSON. `[]` representa vazio e é diferente de `null`. |
+| Versionamento | Cada entidade evolutiva tem `schema_version: u32`. Migrações ficam em `src/migrations/`. |
+| Serde | Todas as structs usam `#[derive(Serialize, Deserialize, Clone, Debug)]`. |
 
 ---
 
-## 2. Entidade Raiz: `Genogram`
+## 2. Entidade raiz: `Genogram`
 
 ```rust
 pub struct Genogram {
@@ -37,9 +36,9 @@ pub struct Genogram {
     pub revision: u64,               // Incrementa a cada mudança (optimistic locking)
 
     pub persons: Vec<Person>,        // 1..N
-    pub relationships: Vec<Relationship>,  // 0..N
+    pub relationships: Vec<Relationship>, // 0..N
     pub households: Vec<Household>,  // 0..N
-    pub collaborators: Vec<Collaborator>,  // 0..N
+    pub collaborators: Vec<Collaborator>, // 0..N
 
     pub metadata: GenogramMetadata,
     pub settings: GenogramSettings,
@@ -50,16 +49,16 @@ pub struct GenogramMetadata {
     pub template: Option<String>,    // "3gen", "couples", "blended_family"
     pub tags: Vec<String>,           // ["oncologia", "urgência"]
     pub source: Option<String>,      // "manual", "gedcom_import", "ai_generated"
-    pub source_ref: Option<String>,  // Ficheiro original (se import)
+    pub source_ref: Option<String>,  // Ficheiro original (se importado)
     pub notes: Option<String>,       // Notas gerais do genograma
 }
 
 pub struct GenogramSettings {
-    pub default_generation_count: u8,  // 3 (padrão)
-    pub max_generation_count: u8,      // 10
-    pub show_households: bool,         // true
-    pub show_ecomap: bool,             // false
-    pub color_scheme: ColorScheme,     // "default", "medical", "high_contrast"
+    pub default_generation_count: u8, // 3 (padrão)
+    pub max_generation_count: u8,     // 10
+    pub show_households: bool,        // true
+    pub show_ecomap: bool,            // false
+    pub color_scheme: ColorScheme,    // "default", "medical", "high_contrast"
 }
 
 pub enum ColorScheme {
@@ -67,37 +66,60 @@ pub enum ColorScheme {
     Medical,
     HighContrast,
 }
+```
 
-JSON Schema (resumo):
+### JSON Schema (resumo)
 
+```json
 {
   "type": "object",
-  "required": ["id", "schema_version", "name", "owner_id", "created_at", "updated_at", "revision", "persons", "relationships", "metadata", "settings"],
+  "required": [
+    "id", "schema_version", "name", "owner_id", "created_at",
+    "updated_at", "revision", "persons", "relationships", "metadata", "settings"
+  ],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
     "schema_version": { "type": "integer", "minimum": 1 },
-    "name": { "type": "string", "maxLength": 200 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
     "description": { "type": ["string", "null"], "maxLength": 1000 },
     "owner_id": { "type": "string", "format": "uuid" },
     "created_at": { "type": "integer" },
     "updated_at": { "type": "integer" },
     "revision": { "type": "integer", "minimum": 0 },
-    "persons": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/Person" } },
-    "relationships": { "type": "array", "items": { "$ref": "#/definitions/Relationship" } },
-    "households": { "type": "array", "items": { "$ref": "#/definitions/Household" } },
-    "collaborators": { "type": "array", "items": { "$ref": "#/definitions/Collaborator" } },
+    "persons": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/Person" }
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Relationship" }
+    },
+    "households": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Household" }
+    },
+    "collaborators": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Collaborator" }
+    },
     "metadata": { "$ref": "#/definitions/GenogramMetadata" },
     "settings": { "$ref": "#/definitions/GenogramSettings" }
   }
 }
+```
 
-3. Entidade: Person
+---
+
+## 3. Entidade: `Person`
+
+```rust
 pub struct Person {
     pub id: Uuid,
     pub genogram_id: Uuid,           // FK → Genogram.id
     pub schema_version: u32,
 
-    // ─── Identidade ───
+    // Identidade
     pub name: String,                // "Maria Silva"
     pub alias: Option<String>,       // "Marina" (apelido)
     pub gender: Gender,
@@ -108,50 +130,52 @@ pub struct Person {
     pub is_index: bool,              // true = pessoa índice (proband)
     pub is_pet: bool,                // true = animal de estimação
     pub is_coparent: bool,           // true = coparente (fora do par)
-    pub is_deceased: bool,           // Derived: death_date.is_some()
+    pub is_deceased: bool,           // Derivado: death_date.is_some()
     pub is_pregnant: bool,           // Gravidez atual
     pub pregnancy_weeks: Option<u8>, // 28 (se is_pregnant)
 
-    // ─── Posição no genograma ───
+    // Posição no genograma
     pub generation: u8,              // 1 = mais antigo, 2 = seguinte, etc.
     pub position: u8,                // Ordem dentro da geração (1 = esquerda)
-    pub x: f64,                      // Posição no canvas (0-1000, normalizado)
-    pub y: f64,                      // Posição no canvas (0-1000, normalizado)
+    pub x: f64,                      // Posição no canvas (0–1000, normalizada)
+    pub y: f64,                      // Posição no canvas (0–1000, normalizada)
 
-    // ─── Demographics ───
+    // Dados demográficos
     pub nationality: Option<String>,
     pub residence: Option<String>,
     pub education: Option<EducationLevel>,
     pub occupation: Option<String>,
     pub socioeconomic: Option<SocioeconomicLevel>,
 
-    // ─── Cultura & Religião ───
-    pub cultural_heritage: Vec<CulturalPattern>,  // 0..N (múltiplas heranças)
+    // Cultura e religião
+    pub cultural_heritage: Vec<CulturalPattern>, // 0..N (múltiplas heranças)
     pub religion: Option<Religion>,
 
-    // ─── Saúde ───
-    pub medical_records: Vec<MedicalRecord>,   // 0..N
+    // Saúde
+    pub medical_records: Vec<MedicalRecord>,     // 0..N
     pub substance_records: Vec<SubstanceRecord>, // 0..N
-    pub genetic_tests: Vec<GeneticTest>,       // 0..N
+    pub genetic_tests: Vec<GeneticTest>,         // 0..N
 
-    // ─── Criminal ───
-    pub criminal_records: Vec<CriminalRecord>, // 0..N
+    // Registos criminais
+    pub criminal_records: Vec<CriminalRecord>,   // 0..N
 
-    // ─── Eventos de vida ───
-    pub life_events: Vec<LifeEvent>,           // 0..N
+    // Eventos de vida
+    pub life_events: Vec<LifeEvent>,             // 0..N
 
-    // ─── Campos custom ───
-    pub custom_fields: Vec<CustomField>,       // 0..N
+    // Campos personalizados
+    pub custom_fields: Vec<CustomField>,         // 0..N
 
-    // ─── Meta ───
-    pub notes: Option<String>,                 // Notas livres (máx 5000)
-    pub photo_ref: Option<String>,             // Path/ID da foto (se exist
-ir)
+    // Metadados
+    pub notes: Option<String>,                   // Notas livres (máx. 5000)
+    pub photo_ref: Option<String>,               // Caminho/ID da foto (se existir)
     pub created_at: i64,
     pub updated_at: i64,
 }
+```
 
-3.1. Enums de Person
+### 3.1. Enums de `Person`
+
+```rust
 pub enum Gender {
     Male,
     Female,
@@ -192,32 +216,38 @@ pub enum Religion {
     Sikhism,
     Taoism,
     Shinto,
-    Other,          // + field `religion_other: Option<String>`
+    Other,          // + campo `religion_other: Option<String>`
     None,           // Ateu / agnóstico
     Unknown,
 }
+```
 
-3.2. CulturalPattern
+### 3.2. `CulturalPattern`
+
+```rust
 pub struct CulturalPattern {
-    pub pattern: CulturalPatternType,  // O padrão visual
-    pub label: Option<String>,         // "Portuguesa", "Brasileira"
+    pub pattern: CulturalPatternType, // O padrão visual
+    pub label: Option<String>,        // "Portuguesa", "Brasileira"
 }
 
 pub enum CulturalPatternType {
-    Solid,           // Preenchido a preto
-    Horizontal,      // Linhas horizontais
-    Vertical,        // Linhas verticais
-    DiagonalRight,   // Linhas diagonais ↗
-    DiagonalLeft,    // Linhas diagonais ↘
-    Grid,            // Grade (cruzamento)
-    Dots,            // Pontos
-    Waves,           // Ondas
-    Braid,           // Trança
-    Crosshatch,      // Hachura cruzada
-    Checkerboard,    // Xadrez
+    Solid,          // Preenchido a preto
+    Horizontal,     // Linhas horizontais
+    Vertical,       // Linhas verticais
+    DiagonalRight,  // Linhas diagonais ↗
+    DiagonalLeft,   // Linhas diagonais ↘
+    Grid,           // Grade (cruzamento)
+    Dots,           // Pontos
+    Waves,          // Ondas
+    Braid,          // Trança
+    Crosshatch,     // Hachura cruzada
+    Checkerboard,   // Xadrez
 }
+```
 
-3.3. MedicalRecord
+### 3.3. `MedicalRecord`
+
+```rust
 pub struct MedicalRecord {
     pub id: Uuid,
     pub person_id: Uuid,               // FK → Person.id
@@ -229,7 +259,7 @@ pub struct MedicalRecord {
     pub onset_date: Option<NaiveDate>,
     pub resolution_date: Option<NaiveDate>,
     pub quadrant: Quadrant,            // Posição no símbolo
-    pub severity: Option<u8>,          // 1-5 (se aplicável)
+    pub severity: Option<u8>,          // 1–5 (se aplicável)
     pub notes: Option<String>,         // "Diagnosticada em 2019"
     pub source: Option<String>,        // "anamnese", "histórico", "teste"
     pub created_at: i64,
@@ -245,7 +275,7 @@ pub enum MedicalCategory {
     HeartFailure,
     PeripheralVascular,
 
-    // Mental / Neurológico (quadrante superior direito)
+    // Mental / neurológico (quadrante superior direito)
     Depression,
     Anxiety,
     Bipolar,
@@ -257,7 +287,7 @@ pub enum MedicalCategory {
     Epilepsy,
     Adhd,
     Autism,
-    StrokeNeuro,  // AVC (neurológico)
+    StrokeNeuro, // AVC (neurológico)
     OtherNeuro,
 
     // Oncológico (quadrante inferior esquerdo)
@@ -271,7 +301,7 @@ pub enum MedicalCategory {
     CancerSkin,
     CancerOther,
 
-    // Metabólico / Endócrino (quadrante inferior direito)
+    // Metabólico / endócrino (quadrante inferior direito)
     DiabetesType1,
     DiabetesType2,
     DiabetesGestational,
@@ -287,34 +317,37 @@ pub enum MedicalCategory {
     Renal,
     Hepatic,
     Infectious,
-    Genetic,          // Doença genética específica
+    Genetic, // Doença genética específica
     Other,
 }
 
 pub enum MedicalStatus {
-    Active,           // Condição atual
-    Suspected,        // Suspeita (não confirmada)
-    Remission,        // Em remissão
-    Recovered,        // Recuperado
-    Deceased,         // Faleceu desta condição
+    Active,     // Condição atual
+    Suspected,  // Suspeita (não confirmada)
+    Remission,  // Em remissão
+    Recovered,  // Recuperado
+    Deceased,   // Faleceu desta condição
 }
 
 pub enum Quadrant {
-    TopLeft,          // Cardiovascular
-    TopRight,         // Mental/Neurológico
-    BottomLeft,       // Oncológico
-    BottomRight,      // Metabólico/Endócrino
-    Center,           // Múltiplo / Outro
+    TopLeft,     // Cardiovascular
+    TopRight,    // Mental / neurológico
+    BottomLeft,  // Oncológico
+    BottomRight, // Metabólico / endócrino
+    Center,      // Múltiplo / outro
 }
+```
 
-3.4. SubstanceRecord
+### 3.4. `SubstanceRecord`
+
+```rust
 pub struct SubstanceRecord {
     pub id: Uuid,
     pub person_id: Uuid,
     pub substance: SubstanceType,
     pub status: SubstanceStatus,
     pub since: Option<NaiveDate>,
-    pub until: Option<NaiveDate>,      // Se "former"
+    pub until: Option<NaiveDate>, // Se `status` for `Former`
     pub frequency: Option<SubstanceFrequency>,
     pub notes: Option<String>,
     pub created_at: i64,
@@ -330,7 +363,7 @@ pub enum SubstanceType {
     Stimulants,
     Sedatives,
     Hallucinogens,
-    Other,        // + `substance_other: Option<String>`
+    Other, // + campo `substance_other: Option<String>`
 }
 
 pub enum SubstanceStatus {
@@ -347,12 +380,15 @@ pub enum SubstanceFrequency {
     Occasional,
     Unknown,
 }
+```
 
-3.5. GeneticTest
+### 3.5. `GeneticTest`
+
+```rust
 pub struct GeneticTest {
     pub id: Uuid,
     pub person_id: Uuid,
-    pub test_name: String,             // "BRCA1/2", "Panel hereditário"
+    pub test_name: String,             // "BRCA1/2", "Painel hereditário"
     pub lab: Option<String>,           // "Laboratório X"
     pub date: Option<NaiveDate>,
     pub result: GeneticTestResult,
@@ -367,16 +403,16 @@ pub struct GeneticTest {
 pub enum GeneticTestResult {
     Positive,
     Negative,
-    VUS,            // Variant of Uncertain Significance
+    VUS, // Variant of Uncertain Significance
     Inconclusive,
     Pending,
 }
 
 pub struct GeneticVariant {
-    pub gene: String,                  // "BRCA1"
-    pub variant: String,               // "c.68_69delAG"
+    pub gene: String,                 // "BRCA1"
+    pub variant: String,              // "c.68_69delAG"
     pub classification: VariantClassification,
-    pub inherited_from: Option<Uuid>,  // FK → Person.id (de quem herdou)
+    pub inherited_from: Option<Uuid>, // FK → Person.id (de quem herdou)
 }
 
 pub enum VariantClassification {
@@ -386,12 +422,15 @@ pub enum VariantClassification {
     LikelyBenign,
     Benign,
 }
+```
 
-3.6. CriminalRecord
+### 3.6. `CriminalRecord`
+
+```rust
 pub struct CriminalRecord {
     pub id: Uuid,
     pub person_id: Uuid,
-    pub offense: String,               // "Homicídio"
+    pub offense: String, // "Homicídio"
     pub year: Option<i16>,
     pub status: CriminalStatus,
     pub notes: Option<String>,
@@ -405,8 +444,11 @@ pub enum CriminalStatus {
     Pending,
     Pardon,
 }
+```
 
-3.7. LifeEvent
+### 3.7. `LifeEvent`
+
+```rust
 pub struct LifeEvent {
     pub id: Uuid,
     pub person_id: Uuid,
@@ -415,6 +457,7 @@ pub struct LifeEvent {
     pub related_person_id: Option<Uuid>, // FK → Person.id (se aplicável)
     pub notes: Option<String>,
     pub created_at: i64,
+    pub updated_at: i64,
 }
 
 pub enum LifeEventType {
@@ -434,16 +477,19 @@ pub enum LifeEventType {
     MilitaryService,
     Incarceration,
     Death,
-    Other,  // + `event_type_other: Option<String>`
+    Other, // + campo `event_type_other: Option<String>`
 }
+```
 
-3.8. CustomField
+### 3.8. `CustomField`
+
+```rust
 pub struct CustomField {
-    pub key: String,                   // "almofada_social"
-    pub value: String,                 // "Rede forte"
+    pub key: String,           // "almofada_social"
+    pub value: String,         // "Rede forte"
     pub field_type: CustomFieldType,
-    pub group: Option<String>,         // "Social", "Ocupacional"
-    pub order: u8,                     // Ordem de exibição
+    pub group: Option<String>, // "Social", "Ocupacional"
+    pub order: u8,             // Ordem de exibição
 }
 
 pub enum CustomFieldType {
@@ -451,82 +497,90 @@ pub enum CustomFieldType {
     Number,
     Date,
     Boolean,
-    Enum,        // + `enum_options: Vec<String>`
+    Enum, // + `enum_options: Vec<String>`
 }
+```
 
-4. Entidade: Relationship
+---
+
+## 4. Entidade: `Relationship`
+
+```rust
 pub struct Relationship {
     pub id: Uuid,
     pub genogram_id: Uuid,
     pub schema_version: u32,
 
-    pub source_id: Uuid,               // FK → Person.id
-    pub target_id: Uuid,               // FK → Person.id
-    pub type: RelationshipType,        // 71+ tipos (ver §4.1)
+    pub source_id: Uuid, // FK → Person.id
+    pub target_id: Uuid, // FK → Person.id
+    pub r#type: RelationshipType, // 71+ tipos (ver §4.1); serializado como `type`
     pub category: RelationshipCategory,
 
-    // ─── Temporal ───
+    // Temporal
     pub since: Option<NaiveDate>,
     pub until: Option<NaiveDate>,
-    pub is_active: bool,               // Derived: until.is_none()
+    pub is_active: bool, // Derivado: until.is_none()
 
-    // ─── Atributos ───
-    pub intensity: Option<u8>,         // 1-5 (para emocionais)
-    pub reconciled: Option<bool>,      // Se "cutoff" — foi reparado?
+    // Atributos
+    pub intensity: Option<u8>,    // 1–5 (para relações emocionais)
+    pub reconciled: Option<bool>, // Se `cutoff`, foi reparado?
     pub notes: Option<String>,
 
-    // ─── Meta ───
+    // Metadados
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 pub enum RelationshipCategory {
-    Partner,        // 18 tipos
-    ParentChild,    // 7 tipos
-    Emotional,      // 39 tipos
-    Other,          // 7 tipos (abuse, spiritual, etc.)
+    Partner,     // 18 tipos
+    ParentChild, // 7 tipos
+    Emotional,   // 39 tipos
+    Other,       // 7 tipos (abuse, spiritual, etc.)
 }
+```
 
-4.1. RelationshipType (71+ tipos)
+### 4.1. `RelationshipType` (71+ tipos)
+
+```rust
 pub enum RelationshipType {
-    // ─── PARTNER (18) ───
-    Married,                  // Sólida
+    // Partner (18)
+    Married,                 // Sólida
     CivilUnion,               // Sólida + anel
     Cohabiting,               // Tracejada
     Dating,                   // Pontilhada
     Engaged,                  // Pontilhada + anel
     Separated,                // Sólida + 1 barra
     Divorced,                 // Sólida + 2 barras
-    Widowed,                  // (derivado: parceiro falecido)
+    Widowed,                  // Derivado: parceiro falecido
     Affair,                   // Pontilhada + cruz
     OnOff,                    // Ondulada
     LongDistance,             // Tracejada + pontos
     Polyamorous,              // Sólida + 3+
     CommonLaw,                // Sólida (variação)
     DomesticPartnership,      // Sólida + coração
-    SeparatedReconciled,      // Sólida + seta reconexão
-    DivorcedReconciled,       // Sólida + seta reconexão
+    SeparatedReconciled,      // Sólida + seta de reconexão
+    DivorcedReconciled,       // Sólida + seta de reconexão
     PartnerUnknown,           // Pontilhada + "?"
-    PartnerDeceased,          // (derivado)
+    PartnerDeceased,          // Derivado
 
-    // ─── PARENT-CHILD (7) ───
+    // Parent-child (7)
     Biological,               // Sólida
     Adopted,                  // Tracejada
     Foster,                   // Pontilhada
     Step,                     // Sólida + pontilhada
-    TwinIdentical,            // 2 linhas + barra topo
+    TwinIdentical,            // 2 linhas + barra superior
     TwinFraternal,            // 2 linhas
     Coparent,                 // Retângulo arredondado
 
-    // ─── EMOTIONAL (39) ───
-    // Próximo / Harmonioso
+    // Emocionais (39)
+    // Próximo / harmonioso
     Close,                    // 2 linhas paralelas
     VeryClose,                // 3 linhas paralelas
     Fused,                    // 3 linhas (enmeshed)
     Enmeshed,                 // 3 linhas + ondas
     Harmonious,               // 2 linhas + coração
 
-    // Distante / Frio
+    // Distante / frio
     Distant,                  // Tracejada
     VeryDistant,              // 2 tracejadas
     Cold,                     // Tracejada + "X"
@@ -535,9 +589,9 @@ pub enum RelationshipType {
 
     // Conflito
     Conflict,                 // 2 tracejadas (zigzag)
-    SevereConflict,           // 2 zigzag
+    SevereConflict,           // 2 zigzags
     Hostile,                  // Zigzag
-    VeryHostile,              // 2 zigzag (denso)
+    VeryHostile,              // 2 zigzags (densos)
     Abusive,                  // Zigzag + "!"
     VerbalAbuse,              // Zigzag + "V"
     PhysicalAbuse,            // Zigzag + "P"
@@ -545,14 +599,14 @@ pub enum RelationshipType {
     EmotionalAbuse,           // Zigzag + "E"
     Neglect,                  // Linha cortada + "N"
 
-    // Cutoff / Ruptura
+    // Cutoff / ruptura
     Cutoff,                   // 2 barras (sem contacto)
     CutoffRepaired,           // 2 barras + círculo
     Ambivalent,               // 2 linhas + zigzag
-    Conflictual,              // 2 linhas + zigzag (próximo E hostil)
+    Conflictual,              // 2 linhas + zigzag (próximo e hostil)
     FusedHostile,             // 3 linhas + zigzag
 
-    // Cuidado / Depender
+    // Cuidado / dependência
     Caregiver,                // 2 setas abertas
     Dependent,                // Seta preenchida (depende de)
     Codependent,              // 2 setas + ondas
@@ -571,25 +625,28 @@ pub enum RelationshipType {
     Rival,                    // 2 setas opostas
     Jealous,                  // Seta + "J"
 
-    // ─── OUTROS (7) ───
+    // Outros (7)
     AbuseUnknown,             // Zigzag + "?"
     SpiritualBond,            // Ondulada + símbolo religioso
     Friendship,               // Sólida + "F"
     Professional,             // Sólida + "P"
     Neighbor,                 // Pontilhada + "N"
-    Other,                    // Custom
+    Other,                    // Personalizado
     Unknown,                  // "?"
 }
+```
 
-4.2. Mapeamento Visual (para o renderer)
-Cada RelationshipType tem uma definição visual:
+### 4.2. Mapeamento visual (renderer)
 
+Cada `RelationshipType` tem uma definição visual:
+
+```rust
 pub struct RelationshipVisual {
     pub line_style: LineStyle,
     pub line_count: u8,
-    pub color: Option<String>,       // Hex (se null = preto)
-    pub markers: Vec<LineMarker>,    // Símbolos na linha
-    pub thickness: f32,              // 1.0 = normal
+    pub color: Option<String>,    // Hex; null = preto
+    pub markers: Vec<LineMarker>, // Símbolos na linha
+    pub thickness: f32,           // 1.0 = normal
 }
 
 pub enum LineStyle {
@@ -615,46 +672,56 @@ pub enum LineMarker {
     Star,           // ★
     Letter(String), // V, P, S, E, R, M, G, N, F, J
 }
+```
 
-5. Entidade: Household
+---
+
+## 5. Entidade: `Household`
+
+```rust
 pub struct Household {
     pub id: Uuid,
     pub genogram_id: Uuid,
-    pub name: Option<String>,        // "Morada A"
-    pub members: Vec<Uuid>,          // FK → Person.id (1..N)
-    pub location: Option<String>,    // "Lisboa"
+    pub name: Option<String>, // "Morada A"
+    pub members: Vec<Uuid>,   // FK → Person.id (1..N)
+    pub location: Option<String>,
     pub since: Option<NaiveDate>,
-    pub until: Option<NaiveDate>,    // Se o agregado terminou
+    pub until: Option<NaiveDate>, // Se o agregado terminou
     pub notes: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
+```
 
-6. Entidade: Collaborator
+---
+
+## 6. Entidade: `Collaborator`
+
+```rust
 pub struct Collaborator {
     pub id: Uuid,
     pub genogram_id: Uuid,
-    pub user_id: Uuid,               // ID do utilizador no sistema
+    pub user_id: Uuid,                     // ID do utilizador no sistema
     pub role: CollaboratorRole,
-    pub permissions: PermissionSet,  // O que este colaborador vê
-    pub added_by: Uuid,              // FK → Person.id (quem convidou)
+    pub permissions: PermissionSet,       // O que este colaborador vê e pode fazer
+    pub added_by: Uuid,                    // FK → Person.id (quem convidou)
     pub added_at: i64,
-    pub revoked_at: Option<i64>,     // Se foi removido
+    pub revoked_at: Option<i64>,           // Se foi removido
     pub last_accessed_at: Option<i64>,
-    pub device_fingerprint: Option<String>, // Para audit
+    pub device_fingerprint: Option<String>, // Para auditoria
 }
 
 pub enum CollaboratorRole {
     Owner,      // Tudo (criador)
-    Editor,     // Tudo exceto delete/invite
-    Viewer,     // Read-only
-    Specialist, // Filtrado (ver PermissionSet)
-    Auditor,    // Metadados apenas (quem acessou, quando)
+    Editor,     // Tudo exceto apagar/convidar
+    Viewer,     // Somente leitura
+    Specialist, // Acesso filtrado (ver PermissionSet)
+    Auditor,    // Apenas metadados (quem acedeu e quando)
 }
 
 pub struct PermissionSet {
-    // O que este colaborador PODE VER:
-    pub medical_categories: Vec<MedicalCategory>,  // [] = tudo, [Cardiovascular] = só cardio
+    // O que este colaborador pode ver
+    pub medical_categories: Vec<MedicalCategory>, // [] = tudo; [Cardiovascular] = só cardio
     pub show_emotional: bool,
     pub show_social: bool,
     pub show_cultural: bool,
@@ -665,7 +732,7 @@ pub struct PermissionSet {
     pub show_custom_fields: bool,
     pub show_notes: bool,
 
-    // O que este colaborador PODE FAZER:
+    // O que este colaborador pode fazer
     pub can_edit: bool,
     pub can_add_person: bool,
     pub can_add_relationship: bool,
@@ -674,27 +741,33 @@ pub struct PermissionSet {
     pub can_export: bool,
     pub can_share: bool,
 }
+```
 
-6.1. RBAC Filtering Logic (no motor)
-QUANDO sincronizar com um Collaborator:
+### 6.1. Lógica de filtragem RBAC (no motor)
 
-1. Se role == Owner → enviar TUDO
-2. Se role == Editor → enviar TUDO (mas can_delete = false na UI)
-3. Se role == Viewer → enviar TUDO (read-only na UI)
-4. Se role == Specialist:
-   a. medical_records: filtrar por medical_categories
-   b. Se show_emotional == false → remover relationships da categoria Emotional
-   c. Se show_criminal == false → remover criminal_records
-   d. Se show_genetic == false → remover genetic_tests
-   e. Se show_substance == false → remover substance_records
-   f. (idem para os restantes flags)
-   → O dado filtrado NUNCA é enviado para o dispositivo.
+Ao sincronizar com um `Collaborator`:
 
-7. Eco-Map (Fase 9 — mas já no schema)
+1. `role == Owner` → enviar tudo.
+2. `role == Editor` → enviar tudo; `can_delete = false` na interface.
+3. `role == Viewer` → enviar tudo em modo somente leitura.
+4. `role == Specialist`:
+   - Filtrar `medical_records` por `medical_categories`.
+   - Se `show_emotional == false`, remover relações da categoria `Emotional`.
+   - Se `show_criminal == false`, remover `criminal_records`.
+   - Se `show_genetic == false`, remover `genetic_tests`.
+   - Se `show_substance == false`, remover `substance_records`.
+   - Aplicar a mesma lógica aos restantes campos e flags.
+   - **Os dados filtrados nunca são enviados para o dispositivo.**
+
+---
+
+## 7. Eco-Map (Fase 9; já incluído no schema)
+
+```rust
 pub struct EcoMap {
     pub id: Uuid,
     pub genogram_id: Uuid,
-    pub center_person_id: Uuid,      // A pessoa no centro
+    pub center_person_id: Uuid, // Pessoa no centro
     pub nodes: Vec<EcoMapNode>,
     pub connections: Vec<EcoMapConnection>,
     pub created_at: i64,
@@ -703,7 +776,7 @@ pub struct EcoMap {
 
 pub struct EcoMapNode {
     pub id: Uuid,
-    pub label: String,               // "Trabalho", "Escola", "Amigos"
+    pub label: String, // "Trabalho", "Escola", "Amigos"
     pub category: EcoMapCategory,
     pub x: f64,
     pub y: f64,
@@ -732,117 +805,142 @@ pub struct EcoMapConnection {
 }
 
 pub enum EcoMapStrength {
-    Strong,       // 3 linhas
-    Moderate,     // 2 linhas
-    Weak,         // 1 linha
-    Negative,     // Zigzag
-    None,         // Linha cortada
+    Strong,   // 3 linhas
+    Moderate, // 2 linhas
+    Weak,     // 1 linha
+    Negative, // Zigzag
+    None,     // Linha cortada
 }
 
 pub enum EcoMapDirection {
-    Bidirectional,  // ↔
-    Outward,        // → (dai para o nó)
-    Inward,         // ← (do nó para o centro)
-    None,           // Sem direção
+    Bidirectional, // ↔
+    Outward,       // → (do centro para o nó)
+    Inward,        // ← (do nó para o centro)
+    None,          // Sem direção
 }
+```
 
-8. GEDCOM Mapping
-Campo Genogram	Tag GEDCOM	Notas
-Person.name	NAME	
-Person.gender	SEX	M/F/U
-Person.birth_date	BIRT/DATE	
-Person.death_date	DEAT/DATE	
-Person.death_cause	DEAT/CAUS	
-Person.occupation	OCCU	
-Person.residence	RESI/PLAC	
-Person.nationality	NATI	
-Relationship.Married	HUSB/WIFE (no FAM)	
-Relationship.Biological	CHIL (no FAM)	
-Relationship.Adopted	CHIL + ADOP	
-MedicalRecord	HSP (Health Status Problem)	Extension GEDCOM 5.5.1
-LifeEvent.Marriage	MARR/DATE	
-LifeEvent.Divorce	DIV/DATE	
-LifeEvent.Immigration	IMMI/DATE	
-Household	RESI (por família)	
-GeneticTest	Sem equivalente	Exportar como NOTE
-EcoMap	Sem equivalente	Não exportar para GEDCOM
-CriminalRecord	Sem equivalente	Exportar como NOTE
-CustomField	_GENO_KEY (custom tag)	Prefixo _ = custom
+---
 
-Regra: O que não tem equivalente GEDCOM é exportado como NOTE com prefixo [Genogram].
+## 8. Mapeamento GEDCOM
 
-9. FHIR Mapping (para SNS/SClínico)
-Campo Genogram	FHIR Resource	Field
-Person (doente)	Patient	name, gender, birthDate
-Person (familiar)	RelatedPerson	name, gender, birthDate
-Relationship (familiar)	RelatedPerson	relationship
-MedicalRecord	Condition	code (ICD-10/SNOMED), onsetDateTime, clinicalStatus
-MedicalRecord (familiar)	FamilyMemberHistory	condition.code, condition.onset
-GeneticTest	Observation	code (LOINC), valueCodeableConcept
-GeneticVariant	MolecularSequence	elementReference, type
-SubstanceRecord	Condition	code (ICD-10: F10-F19)
-LifeEvent	Observation	code (LOINC), effectiveDateTime
+| Campo Genogram | Tag GEDCOM | Notas |
+|---|---|---|
+| `Person.name` | `NAME` | |
+| `Person.gender` | `SEX` | `M/F/U` |
+| `Person.birth_date` | `BIRT/DATE` | |
+| `Person.death_date` | `DEAT/DATE` | |
+| `Person.death_cause` | `DEAT/CAUS` | |
+| `Person.occupation` | `OCCU` | |
+| `Person.residence` | `RESI/PLAC` | |
+| `Person.nationality` | `NATI` | |
+| `Relationship.Married` | `HUSB/WIFE` | No `FAM` |
+| `Relationship.Biological` | `CHIL` | No `FAM` |
+| `Relationship.Adopted` | `CHIL + ADOP` | |
+| `MedicalRecord` | `HSP` | Extensão GEDCOM 5.5.1 |
+| `LifeEvent.Marriage` | `MARR/DATE` | |
+| `LifeEvent.Divorce` | `DIV/DATE` | |
+| `LifeEvent.Immigration` | `IMMI/DATE` | |
+| `Household` | `RESI` | Por família |
+| `GeneticTest` | Sem equivalente | Exportar como `NOTE` |
+| `EcoMap` | Sem equivalente | Não exportar para GEDCOM |
+| `CriminalRecord` | Sem equivalente | Exportar como `NOTE` |
+| `CustomField` | `_GENO_KEY` | Prefixo `_` = custom |
 
-Regra: Só exportar para FHIR o que é necessário (princípio da minimização). Eco-maps, dinâmicas emocionais, criminal → nunca exportar para FHIR.
+**Regra:** o que não tem equivalente GEDCOM é exportado como `NOTE` com o prefixo `[Genogram]`.
 
-10. Validação (Problem Spotter)
-O motor valida o genograma contra estas regras:
+---
 
-#	Regra	Severidade
-V01	Pessoa sem generation definido	Error
-V02	Pessoa com death_date < birth_date	Error
-V03	Relação Married entre pessoas da mesma geração (sem flag consanguineous)	Warning
-V04	Pessoa com mais de 2 parceiros simultâneos (sem flag polyamorous)	Warning
-V05	Filho com generation = generation do pai/mãe	Error
-V06	Relação ParentChild entre pessoas da mesma geração	Error
-V07	MedicalRecord com onset_date < birth_date	Warning
-V08	MedicalRecord com resolution_date < onset_date	Error
-V09	Person com is_pregnant = true e gender = Male	Warning
-V10	Relationship com source_id == target_id (self-loop)	Error
-V11	Relationship duplicada (mesmo source, target, type, período)	Warning
-V12	Person com generation = 1 sem pais (OK, mas flag)	Info
-V13	GeneticTest com consent_given = false e result = Positive	Error
-V14	CriminalRecord com year > ano atual	Warning
-V15	Household com 0 membros	Error
-V16	Collaborator com role = Specialist e medical_categories = [] (vazio = tudo)	Info
-V17	Person com age_at_death inconsistente com birth_date/death_date	Warning
-V18	Relationship com until < since	Error
-V19	TwinIdentical/TwinFraternal com birth_date diferente	Warning
-V20	Person com is_pet = true e medical_records não vazios	Info
-V21	Genogram com 0 Relationships (só pessoas soltas)	Warning
-V22	Person com name vazio	Error
-V23	MedicalRecord com category = Cancer* e status = Active sem onset_date	Warning
+## 9. Mapeamento FHIR (para SNS / SClínico)
 
-11. Versioning e Migrações
-Regra	Detalhe
-schema_version	Cada entidade tem o seu. O Genogram tem o global.
-Migração	src/migrations/v1_to_v2.rs (Rust). Cada migração é uma função: fn migrate(data: &mut Genogram) -> Result<()>
-Compatibilidade	Sempre backward-compatible. Um genograma v1 abre numa app v2 sem migração (os campos novos ficam null).
-Breaking changes	Só em major version (v2.0). A app deteta a versão e aplica migrações em cascata.
-Locking	revision incrementa a cada mudança. Se 2 dispositivos editam o mesmo campo, o CRDT resolve (last-writer-wins para scalars, merge para sets).
+| Campo Genogram | Recurso FHIR | Campo |
+|---|---|---|
+| `Person` (doente) | `Patient` | `name`, `gender`, `birthDate` |
+| `Person` (familiar) | `RelatedPerson` | `name`, `gender`, `birthDate` |
+| `Relationship` (familiar) | `RelatedPerson` | `relationship` |
+| `MedicalRecord` | `Condition` | `code` (ICD-10/SNOMED), `onsetDateTime`, `clinicalStatus` |
+| `MedicalRecord` (familiar) | `FamilyMemberHistory` | `condition.code`, `condition.onset` |
+| `GeneticTest` | `Observation` | `code` (LOINC), `valueCodeableConcept` |
+| `GeneticVariant` | `MolecularSequence` | `elementReference`, `type` |
+| `SubstanceRecord` | `Condition` | `code` (ICD-10: F10-F19) |
+| `LifeEvent` | `Observation` | `code` (LOINC), `effectiveDateTime` |
 
-12. Limites e Constraints
-Campo	Mín	Máx
-Genogram.name	1	200 chars
-Person.name	1	200 chars
-Person.notes	0	5000 chars
-MedicalRecord.condition	1	300 chars
-MedicalRecord.notes	0	1000 chars
-Relationship.notes	0	500 chars
-Genogram.persons	1	10000
-Genogram.relationships	0	50000
-Person.medical_records	0	100
-Person.life_events	0	50
-Person.custom_fields	0	20
-Genogram.collaborators	0	50
-Household.members	1	50
-Person.generation	1	10
-Person.position	1	100
-MedicalRecord.severity	1	5
-Relationship.intensity	1	5
-Genogram.settings.max_generation_count	1	10
+**Regra:** exportar para FHIR apenas o que for necessário (princípio da minimização). Eco-maps, dinâmicas emocionais e dados criminais nunca devem ser exportados para FHIR.
 
-13. Índices (SQLite)
+---
+
+## 10. Validação (Problem Spotter)
+
+O motor valida o genograma segundo estas regras:
+
+| # | Regra | Severidade |
+|---|---|---|
+| V01 | Pessoa sem `generation` definido | Error |
+| V02 | Pessoa com `death_date < birth_date` | Error |
+| V03 | Relação `Married` entre pessoas da mesma geração (sem flag `consanguineous`) | Warning |
+| V04 | Pessoa com mais de 2 parceiros simultâneos (sem flag `polyamorous`) | Warning |
+| V05 | Filho com `generation` igual à geração do pai/mãe | Error |
+| V06 | Relação `ParentChild` entre pessoas da mesma geração | Error |
+| V07 | `MedicalRecord` com `onset_date < birth_date` | Warning |
+| V08 | `MedicalRecord` com `resolution_date < onset_date` | Error |
+| V09 | Pessoa com `is_pregnant = true` e `gender = Male` | Warning |
+| V10 | `Relationship` com `source_id == target_id` (self-loop) | Error |
+| V11 | Relação duplicada (mesmo `source`, `target`, `type` e período) | Warning |
+| V12 | Pessoa com `generation = 1` sem pais (permitido, mas assinalado) | Info |
+| V13 | `GeneticTest` com `consent_given = false` e `result = Positive` | Error |
+| V14 | `CriminalRecord` com `year` posterior ao ano atual | Warning |
+| V15 | `Household` sem membros | Error |
+| V16 | `Collaborator` com `role = Specialist` e `medical_categories = []` (vazio = tudo) | Info |
+| V17 | Pessoa com `age_at_death` inconsistente com `birth_date`/`death_date` | Warning |
+| V18 | `Relationship` com `until < since` | Error |
+| V19 | `TwinIdentical`/`TwinFraternal` com `birth_date` diferente | Warning |
+| V20 | Pessoa com `is_pet = true` e `medical_records` não vazios | Info |
+| V21 | `Genogram` sem relações (apenas pessoas isoladas) | Warning |
+| V22 | Pessoa com `name` vazio | Error |
+| V23 | `MedicalRecord` com categoria `Cancer*`, estado `Active` e sem `onset_date` | Warning |
+
+---
+
+## 11. Versionamento e migrações
+
+| Regra | Detalhe |
+|---|---|
+| `schema_version` | Cada entidade tem a sua versão; `Genogram` também tem uma versão global. |
+| Migração | `src/migrations/v1_to_v2.rs` (Rust). Cada migração é uma função: `fn migrate(data: &mut Genogram) -> Result<()>`. |
+| Compatibilidade | Sempre que possível, manter compatibilidade retroativa. Um genograma v1 abre numa app v2 sem migração; os novos campos ficam `null`. |
+| Breaking changes | Apenas numa versão major (v2.0). A app deteta a versão e aplica migrações em cascata. |
+| Locking | `revision` incrementa a cada mudança. Se dois dispositivos editarem o mesmo campo, o CRDT resolve o conflito (last-writer-wins para scalars, merge para sets). |
+
+---
+
+## 12. Limites e constraints
+
+| Campo | Mín. | Máx. |
+|---|---:|---:|
+| `Genogram.name` | 1 | 200 caracteres |
+| `Person.name` | 1 | 200 caracteres |
+| `Person.notes` | 0 | 5000 caracteres |
+| `MedicalRecord.condition` | 1 | 300 caracteres |
+| `MedicalRecord.notes` | 0 | 1000 caracteres |
+| `Relationship.notes` | 0 | 500 caracteres |
+| `Genogram.persons` | 1 | 10000 |
+| `Genogram.relationships` | 0 | 50000 |
+| `Person.medical_records` | 0 | 100 |
+| `Person.life_events` | 0 | 50 |
+| `Person.custom_fields` | 0 | 20 |
+| `Genogram.collaborators` | 0 | 50 |
+| `Household.members` | 1 | 50 |
+| `Person.generation` | 1 | 10 |
+| `Person.position` | 1 | 100 |
+| `MedicalRecord.severity` | 1 | 5 |
+| `Relationship.intensity` | 1 | 5 |
+| `Genogram.settings.max_generation_count` | 1 | 10 |
+
+---
+
+## 13. Índices (SQLite)
+
+```sql
 CREATE INDEX idx_person_genogram ON person(genogram_id);
 CREATE INDEX idx_person_generation ON person(genogram_id, generation, position);
 CREATE INDEX idx_rel_genogram ON relationship(genogram_id);
@@ -854,8 +952,13 @@ CREATE INDEX idx_medical_category ON medical_record(person_id, category);
 CREATE INDEX idx_household_genogram ON household(genogram_id);
 CREATE INDEX idx_collab_genogram ON collaborator(genogram_id);
 CREATE INDEX idx_collab_user ON collaborator(user_id);
+```
 
-14. Exemplo JSON (mini genograma)
+---
+
+## 14. Exemplo JSON (mini genograma)
+
+```json
 {
   "id": "0192a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
   "schema_version": 1,
@@ -954,7 +1057,8 @@ CREATE INDEX idx_collab_user ON collaborator(user_id);
           "date": "1970-06-15",
           "related_person_id": "0192a3b4c5d6e7f8a9b0c1d2e3f4a5b2",
           "notes": null,
-          "created_at": 1730649600
+          "created_at": 1730649600,
+          "updated_at": 1730649600
         }
       ],
       "custom_fields": [],
@@ -1048,29 +1152,31 @@ CREATE INDEX idx_collab_user ON collaborator(user_id);
     "color_scheme": "medical"
   }
 }
-
-15. Notas para a IA (regras de implementação)
-Nunca criar um campo que não está neste schema. Se precisa de algo extra, usar custom_fields.
-Nunca usar i32 para IDs — sempre Uuid (UUID v7).
-Nunca usar Option<Option<T>> — usar Option<T>.
-Sempre incluir created_at e updated_at em entidades com id.
-Sempre incluir schema_version: u32 em entidades que podem evoluir.
-Nunca armazenar dados em formato denormalizado (ex.: não guardar o nome do pai dentro do filho — usar Relationship).
-Sempre validar source_id != target_id em Relationship.
-Sempre validar generation do filho = generation do pai/mãe + 1.
-Nunca exportar EcoMap, CriminalRecord, ou Relationship (categoria Emotional) para FHIR.
-Sempre aplicar RBAC filtering antes de serializar para o dispositivo do colaborador.
+```
 
 ---
 
-### Notas sobre este documento
+## 15. Notas para a IA (regras de implementação)
 
-| Aspecto | Detalhe |
+- Nunca criar um campo que não esteja neste schema. Se for necessário algo extra, usar `custom_fields`.
+- Nunca usar `i32` para IDs; usar sempre `Uuid` (UUID v7).
+- Nunca usar `Option<Option<T>>`; usar `Option<T>`.
+- Sempre incluir `created_at` e `updated_at` em entidades com ID.
+- Sempre incluir `schema_version: u32` em entidades que podem evoluir.
+- Nunca armazenar dados de forma desnormalizada (por exemplo, não guardar o nome do pai no filho; usar `Relationship`).
+- Sempre validar `source_id != target_id` em `Relationship`.
+- Sempre validar que a geração do filho é igual à geração do pai/mãe + 1.
+- Nunca exportar `EcoMap`, `CriminalRecord` ou `Relationship` da categoria `Emotional` para FHIR.
+- Sempre aplicar a filtragem RBAC antes de serializar os dados para o dispositivo do colaborador.
+
+---
+
+## Notas sobre este documento
+
+| Aspeto | Detalhe |
 |---|---|
-| **Tamanho** | ~1500 linhas. É o documento mais extenso. |
-| **Atualização** | Só mudar com ADR (decisão documentada). Nunca "no ar". |
-| **Validação** | O schema JSON deve ser validado com `ajv` (JS) e `schemars` (Rust) em CI. |
-| **Para a IA** | Colar a secção relevante (ex.: "secção 3") no prompt, não o documento inteiro (salva tokens). |
-| **Para clínicos** | A secção 3 (Person) e 4 (Relationship) são as que os clínicos devem validar. O resto é técnico. |
-
----
+| Tamanho | Aproximadamente 1500 linhas; é o documento mais extenso. |
+| Atualização | Só alterar com um ADR (decisão documentada). Nunca alterar “no ar”. |
+| Validação | Validar o JSON Schema com `ajv` (JS) e `schemars` (Rust) em CI. |
+| Para a IA | Incluir no prompt apenas a secção relevante (por exemplo, a secção 3), em vez do documento inteiro. |
+| Para clínicos | As secções 3 (`Person`) e 4 (`Relationship`) devem ser validadas pelos clínicos. O restante conteúdo é técnico. |
