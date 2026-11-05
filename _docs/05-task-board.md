@@ -545,4 +545,141 @@
 | ID | Tarefa | Ficheiro | Estado | Deps |
 |---|---|---|:---:|---|
 | 8.1.1 | `llama.cpp` integration (Rust: `llama-cpp-rs`) | `engine/Cargo.toml` | ⬜ | 1.1.18 |
-| 8.1.2 | `ai/generate.rs` — text-to-genogram (prompt → JSON schema) | `engine/src/ai/generate.rs`   
+| 8.1.2 | `ai/generate.rs` — text-to-genogram (prompt → JSON schema) | `engine/src/ai/generate.rs` | ⬜ | 8.1.1 |
+| 8.1.3 | `ai/edit.rs` — chat editing (instruções em linguagem natural → deltas) | `engine/src/ai/edit.rs` | ⬜ | 8.1.2 |
+| 8.1.4 | `ai/insights.rs` — pattern analysis (transmissão multigeracional, triangulação, cutoffs, clustering) | `engine/src/ai/insights.rs` | ⬜ | 8.1.2 |
+| 8.1.5 | `ai/image.rs` — image-to-genogram (OCR + symbol recognition → structured JSON) | `engine/src/ai/image.rs` | ⬜ | 8.1.2 |
+| 8.1.6 | Model download manager (GGUF, 7B-13B, progress bar, cache) | `engine/src/ai/model.rs` | ⬜ | 8.1.1 |
+| 8.1.7 | Prompt builder (schema-aware: injecta schema + notation no prompt) | `engine/src/ai/prompts.rs` | ⬜ | 8.1.2 |
+| 8.1.8 | Output validator (AI output → JSON → valida contra schema → rejeita se inválido) | `engine/src/ai/validate.rs` | ⬜ | 8.1.7 |
+| 8.1.9 | UI: `AIChat.svelte` (panel lateral, input de texto, streaming response) | `frontend/src/lib/components/ai/AIChat.svelte` | ⬜ | 8.1.2 |
+| 8.1.10 | UI: `AIInsights.svelte` (botão "Analisar" → lista de padrões detectados) | `frontend/src/lib/components/ai/AIInsights.svelte` | ⬜ | 8.1.4 |
+| 8.1.11 | UI: `AIImageUpload.svelte` (upload de foto → preview → confirmar) | `frontend/src/lib/components/ai/AIImageUpload.svelte` | ⬜ | 8.1.5 |
+| 8.1.12 | Test: text-to-genogram → output válido contra schema | `engine/tests/test_ai_generate.rs` | ⬜ | 8.1.8 |
+| 8.1.13 | Test: AI insights → padrões correctos (genograma com cutoff → detecta cutoff) | `engine/tests/test_ai_insights.rs` | ⬜ | 8.1.4 |
+| 8.1.14 | Test: AI output inválido → rejeitado (não crasha) | `engine/tests/test_ai_validate.rs` | ⬜ | 8.1.8 |
+| 8.1.15 | Test: image-to-genogram (foto de genograma desenhado → JSON) | `engine/tests/test_ai_image.rs` | ⬜ | 8.1.5 |
+
+### 8.2. AI Mobile (Core ML / TFLite)
+
+| ID | Tarefa | Ficheiro | Estado | Deps |
+|---|---|---|:---:|---|
+| 8.2.1 | Core ML model (iOS) — conversão GGUF → Core ML | `mobile/ios/ai/` | ⬜ | 8.1.6 |
+| 8.2.2 | TFLite model (Android) — conversão GGUF → TFLite | `mobile/android/ai/` | ⬜ | 8.1.6 |
+| 8.2.3 | `ai_mobile.rs` — bridge Rust → Core ML / TFLite | `engine/src/ai/mobile.rs` | ⬜ | 8.2.1, 8.2.2 |
+| 8.2.4 | Test: mobile AI → output válido contra schema | `engine/tests/test_ai_mobile.rs` | ⬜ | 8.2.3 |
+| 8.2.5 | Performance: inference < 30s (mobile, 7B model) | `engine/benches/ai_bench.rs` | ⬜ | 8.2.3 |
+
+### 8.3. AI Zero-Knowledge
+
+| ID | Tarefa | Ficheiro | Estado | Deps |
+|---|---|---|:---:|---|
+| 8.3.1 | Anonimização client-side (nomes → placeholders antes do prompt) | `engine/src/ai/anonymize.rs` | ⬜ | 8.1.7 |
+| 8.3.2 | Edge inference (modelo local, zero network) | `engine/src/ai/edge.rs` | ⬜ | 8.1.1 |
+| 8.3.3 | Test: AI inference → 0 bytes de tráfego de rede | `engine/tests/test_ai_zero_knowledge.rs` | ⬜ | 8.3.2 |
+
+### ✅ Aceitação Fase 8 (v2.0)
+
+| Critério | Estado |
+|---|:---:|
+| Text-to-genogram (desktop) → schema válido | ⬜ |
+| Chat editing (adicionar/corrigir por texto) | ⬜ |
+| AI Insights (padrões: cutoff, triangulação, clustering) | ⬜ |
+| Image-to-genogram (foto → JSON) | ⬜ |
+| Mobile AI (básico, 7B) | ⬜ |
+| Zero-knowledge: 0 bytes de dados clínicos saem do dispositivo | ⬜ |
+| AI output inválido → rejeitado (não crasha) | ⬜ |
+| Performance: inference < 10s (desktop, 13B) | ⬜ |
+| Performance: inference < 30s (mobile, 7B) | ⬜ |
+
+---
+
+## Fase 9 — Eco-Maps + FHIR (3-4 semanas)
+
+### 9.1. Eco-Maps
+
+| ID | Tarefa | Ficheiro | Estado | Deps |
+|---|---|---|:---:|---|
+| 9.1.1 | `EcoMapCanvas.svelte` (Konva Stage separado, radial layout) | `frontend/src/lib/components/canvas/EcoMapCanvas.svelte` | ⬜ | 2.1.1 |
+| 9.1.2 | `EcoMapNode.svelte` (círculo/quadrado/hexágono por categoria) | `frontend/src/lib/components/canvas/EcoMapNode.svelte` | ⬜ | 9.1.1 |
+| 9.1.3 | `EcoMapConnection.svelte` (linhas: forte/moderado/fraco/negativo) | `frontend/src/lib/components/canvas/EcoMapConnection.svelte` | ⬜ | 9.1.1 |
+| 9.1.4 | `EcoMapPanel.svelte` (form: adicionar nó, editar conexão, notas) | `frontend/src/lib/components/panels/EcoMapPanel.svelte` | ⬜ | 9.1.2 |
+| 9.1.5 | UI: toggle "Eco-Map" na toolbar (mostrar/esconder) | `Toolbar.svelte` | ⬜ | 9.1.1 |
+| 9.1.6 | Layout: radial (nós ao redor do centro, 8-12 posições) | `engine/src/layout/ecomap_radial.rs` | ⬜ | 2.3.1 |
+| 9.1.7 | Tauri command: `add_ecomap_node`, `update_ecomap_connection` | `tauri/src/commands.rs` | ⬜ | 9.1.4 |
+| 9.1.8 | CRDT: EcoMap como Yrs Map (sync entre dispositivos) | `engine/src/crdt/ecomap_map.rs` | ⬜ | 1.3.1 |
+| 9.1.9 | RBAC: `show_ecomap: false` → eco-map não sincroniza | `engine/src/rbac/filter.rs` | ⬜ | 1.5.1 |
+| 9.1.10 | Test: eco-map CRUD (criar, editar, apagar nó e conexão) | `engine/tests/test_ecomap.rs` | ⬜ | 9.1.8 |
+| 9.1.11 | Test: eco-map sync (2 devices → convergem) | `engine/tests/test_ecomap_sync.rs` | ⬜ | 9.1.8 |
+| 9.1.12 | Test: RBAC (specialist sem show_ecomap → não recebe) | `engine/tests/test_ecomap_rbac.rs` | ⬜ | 9.1.9 |
+| 9.1.13 | Export: eco-map em PDF/SVG (separado do genograma) | `engine/src/import_export/ecomap_export.rs` | ⬜ | 9.1.1 |
+
+### 9.2. FHIR (Completo)
+
+| ID | Tarefa | Ficheiro | Estado | Deps |
+|---|---|---|:---:|---|
+| 9.2.1 | FHIR: `Patient` resource (pessoa índice) | `engine/src/import_export/fhir/patient.rs` | ⬜ | 3.4.1 |
+| 9.2.2 | FHIR: `RelatedPerson` resource (familiares) | `engine/src/import_export/fhir/related_person.rs` | ⬜ | 3.4.1 |
+| 9.2.3 | FHIR: `FamilyMemberHistory` resource (histórico familiar) | `engine/src/import_export/fhir/family_history.rs` | ⬜ | 3.4.1 |
+| 9.2.4 | FHIR: `Condition` resource (ICD-10 + SNOMED CT) | `engine/src/import_export/fhir/condition.rs` | ⬜ | 3.4.1 |
+| 9.2.5 | FHIR: `Observation` resource (testes genéticos, LOINC) | `engine/src/import_export/fhir/observation.rs` | ⬜ | 3.4.1 |
+| 9.2.6 | FHIR: `MolecularSequence` (variantes genéticas) | `engine/src/import_export/fhir/molecular.rs` | ⬜ | 9.2.5 |
+| 9.2.7 | FHIR: `Bundle` assembly (agregar todos os resources) | `engine/src/import_export/fhir/bundle.rs` | ⬜ | 9.2.1-9.2.6 |
+| 9.2.8 | FHIR: consent check antes de export (bloquear se não consentir) | `engine/src/import_export/fhir/consent.rs` | ⬜ | 9.2.7, 1.5.3 |
+| 9.2.9 | FHIR: RBAC filter (só exportar o que o role permite) | `engine/src/import_export/fhir/rbac.rs` | ⬜ | 9.2.7, 1.5.1 |
+| 9.2.10 | FHIR: ICD-10 mapping (MedicalCategory → código ICD-10) | `engine/src/import_export/fhir/icd10_map.rs` | ⬜ | 9.2.4 |
+| 9.2.11 | FHIR: SNOMED CT mapping (MedicalCategory → código SNOMED) | `engine/src/import_export/fhir/snomed_map.rs` | ⬜ | 9.2.4 |
+| 9.2.12 | FHIR: LOINC mapping (GeneticTest → código LOINC) | `engine/src/import_export/fhir/loinc_map.rs` | ⬜ | 9.2.5 |
+| 9.2.13 | Tauri command: `export_fhir(genogram_id, role, path, format)` | `tauri/src/commands.rs` | ⬜ | 9.2.7 |
+| 9.2.14 | UI: `ExportMenu` → opção "FHIR" (JSON / NDJSON) | `ExportMenu.svelte` | ⬜ | 9.2.13 |
+| 9.2.15 | Test: FHIR Bundle válido (validar com HAPI FHIR validator) | `engine/tests/test_fhir_bundle.rs` | ⬜ | 9.2.7 |
+| 9.2.16 | Test: FHIR + RBAC (cardiologista → só cardiovascular) | `engine/tests/test_fhir_rbac.rs` | ⬜ | 9.2.9 |
+| 9.2.17 | Test: FHIR + consent (sem consentimento → bloqueado) | `engine/tests/test_fhir_consent.rs` | ⬜ | 9.2.8 |
+| 9.2.18 | Test: FHIR não exporta emocional/criminal/ecomap | `engine/tests/test_fhir_exclusions.rs` | ⬜ | 9.2.7 |
+| 9.2.19 | Test: FHIR round-trip (export → parse → dados intactos) | `engine/tests/test_fhir_roundtrip.rs` | ⬜ | 9.2.7 |
+
+### 9.3. Interoperabilidade (SNS/SClínico)
+
+| ID | Tarefa | Ficheiro | Estado | Deps |
+|---|---|---|:---:|---|
+| 9.3.1 | FHIR API client (enviar Bundle para SClínico via HTTPS) | `engine/src/import_export/fhir/client.rs` | ⬜ | 9.2.7 |
+| 9.3.2 | Auth: SMART on FHIR / OAuth2 (para SClínico) | `engine/src/import_export/fhir/auth.rs` | ⬜ | 9.3.1 |
+| 9.3.3 | Config: endpoint SClínico (URL, client_id, token) | `engine/src/import_export/fhir/config.rs` | ⬜ | 9.3.1 |
+| 9.3.4 | UI: "Exportar para SClínico" (com confirmação + consent) | `ExportMenu.svelte` | ⬜ | 9.3.1 |
+| 9.3.5 | Test: FHIR client → mock SClínico API (HTTP 200) | `engine/tests/test_fhir_client.rs` | ⬜ | 9.3.1 |
+| 9.3.6 | Test: FHIR client → auth expirado → refresh token | `engine/tests/test_fhir_auth.rs` | ⬜ | 9.3.2 |
+
+### ✅ Aceitação Fase 9 (v2.1)
+
+| Critério | Estado |
+|---|:---:|
+| Eco-map: criar, editar, exportar (PDF/SVG) | ⬜ |
+| Eco-map: sync entre dispositivos (CRDT) | ⬜ |
+| Eco-map: RBAC (show_ecomap) | ⬜ |
+| FHIR: Bundle válido (R4, HAPI validator) | ⬜ |
+| FHIR: ICD-10 + SNOMED + LOINC mapping | ⬜ |
+| FHIR: RBAC aplicado (só o permitido) | ⬜ |
+| FHIR: consent check (bloquear sem consentimento) | ⬜ |
+| FHIR: não exporta emocional/criminal/ecomap | ⬜ |
+| FHIR: round-trip lossless | ⬜ |
+| Interop: enviar para SClínico (mock) | ⬜ |
+
+---
+
+## Resumo Global
+
+| Fase | Tarefas | Duração | Deliverable |
+|---|:---:|---|---|
+| 0 — Fundação | 47 | 2-3 sem | Documentação + repo funcional |
+| 1 — Motor | 67 | 3-4 sem | Motor Rust testado |
+| 2 — Canvas | 42 | 4-5 sem | MVP funcional (desktop) |
+| 3 — Import/Export | 26 | 2-3 sem | MVP completo |
+| 4 — PWA + Multi-Device | 25 | 3-4 sem | Beta (desktop + browser) |
+| 5 — NAS + Colaboração | 20 | 3-4 sem | RC (release candidate) |
+| 6 — Polish + Release | 33 | 2-3 sem | **v1.0** |
+| 7 — Mobile | 17 | 4-5 sem | **v1.1** |
+| 8 — AI | 25 | 4-6 sem | **v2.0** |
+| 9 — Eco-Maps + FHIR | 33 | 3-4 sem | **v2.1** |
+| **Total** | **355** | **~30-38 sem** | |
+
+**Com 2 developers (1 Rust + 1 frontend): ~15-19 semanas até v1.0.**   
